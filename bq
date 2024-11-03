@@ -1,0 +1,75 @@
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+
+local GAME_ID = 7239319209 -- Replace with your actual game ID
+
+local function teleportPlayerToPart(player, part)
+	local character = player.Character or player.CharacterAdded:Wait()
+	local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+	humanoidRootPart.CFrame = part.CFrame
+
+	-- Create a ProximityPrompt
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "Hold E"
+	prompt.ObjectText = "Interact"
+	prompt.HoldDuration = 0 -- Set the hold duration to 0
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = part
+
+	-- Automatically trigger the prompt
+	task.delay(0, function()
+		if prompt then
+			print(player.Name .. " has automatically interacted with the prompt.")
+			prompt:Destroy()
+		end
+	end)
+
+	-- If on mobile, automatically interact with the prompt
+	if UserInputService.TouchEnabled then
+		task.delay(0, function()
+			if prompt then
+				print(player.Name .. " has automatically interacted with the prompt on mobile.")
+				prompt:Destroy()
+			end
+		end)
+	end
+end
+
+local function serverHop()
+	-- Use TeleportService to hop to another server within the same game
+	TeleportService:Teleport(GAME_ID)
+	print("Server hopping to another server...")
+end
+
+local function checkAndTeleport()
+	local found = false
+	for _, descendant in Workspace:GetDescendants() do
+		if descendant:IsA("Model") or descendant:IsA("Part") then
+			if string.match(descendant.Name:lower(), "money") then
+				found = true
+				for _, player in Players:GetPlayers() do
+					teleportPlayerToPart(player, descendant)
+				end
+				break
+			end
+		end
+	end
+
+	if not found then
+		serverHop()
+	end
+end
+
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function()
+		checkAndTeleport()
+	end)
+end)
+
+for _, player in Players:GetPlayers() do
+	player.CharacterAdded:Connect(function()
+		checkAndTeleport()
+	end)
+end
